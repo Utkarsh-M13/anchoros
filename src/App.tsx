@@ -1,61 +1,86 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { migrate } from "./db/migrate";
-import { getOrCreateDay, getAnchorLogsForDay } from "./db/days";
-import { getWeeklyAnchorScores } from "./db/scoring";
-import { AnchorLog, AnchorType } from "./types";
+import { getOrCreateDay, updateAnchorStatus } from "./db/days";
+import { getAnchorMatrix, AnchorMatrix as MatrixData } from "./db/matrix";
 import { todayDate } from "./db/helpers";
+import { AnchorStatus, AnchorType } from "./types";
+import { Header } from "./components/Header";
+import { AnchorMatrix } from "./components/AnchorMatrix";
+import { nextStatus } from "./ui";
+import "./App.css";
 
-// Smoke test for the data layer, NOT the real dashboard. Runs the migration,
-// seeds today, and renders the 8 anchors + weekly scores so we can confirm
-// end-to-end (schema -> queries -> UI) works before building the real UI.
+const MATRIX_DAYS = 3;
+
 function App() {
-  const [status, setStatus] = useState("starting...");
-  const [anchors, setAnchors] = useState<AnchorLog[]>([]);
-  const [scores, setScores] = useState<Record<AnchorType, number> | null>(null);
+  const today = todayDate();
+  const [dayId, setDayId] = useState<string | null>(null);
+  const [matrix, setMatrix] = useState<MatrixData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setMatrix(await getAnchorMatrix(today, MATRIX_DAYS));
+  }, [today]);
 
   useEffect(() => {
     (async () => {
       try {
         await migrate();
-        const date = todayDate();
-        const day = await getOrCreateDay(date);
-        setAnchors(await getAnchorLogsForDay(day.id));
-        setScores(await getWeeklyAnchorScores(date));
-        setStatus(`DB ready. Day ${date} seeded.`);
+        const day = await getOrCreateDay(today);
+        setDayId(day.id);
+        await refresh();
       } catch (e) {
-        setStatus("DB error: " + String(e));
+        setError(String(e));
       }
     })();
-  }, []);
+  }, [today, refresh]);
+
+  const cycleToday = async (anchor: AnchorType, current: AnchorStatus) => {
+    if (!dayId) return;
+    await updateAnchorStatus(dayId, anchor, nextStatus(current));
+    await refresh();
+  };
+
+  if (error) {
+    return (
+      <div className="app">
+        <p className="error">DB error: {error}</p>
+      </div>
+    );
+  }
 
   return (
-    <main
-      style={{
-        fontFamily: "system-ui, sans-serif",
-        background: "#0a0a0a",
-        color: "#eaeaea",
-        minHeight: "100vh",
-        padding: "32px",
-      }}
-    >
-      <h1 style={{ margin: 0, fontSize: 28 }}>AnchorOS</h1>
-      <p style={{ opacity: 0.6, marginTop: 4 }}>Fall to your systems</p>
-      <p style={{ marginTop: 20, opacity: 0.85 }}>{status}</p>
+    <div className="app">
+      <Header />
+      <div className="grid">
+        {/* Left column: anchor matrix, then weekly radar */}
+        <div className="col">
+          {matrix ? (
+            <AnchorMatrix data={matrix} today={today} onCycleToday={cycleToday} />
+          ) : (
+            <section className="card">
+              <p className="muted">Loading anchors...</p>
+            </section>
+          )}
+          <section className="card stub">
+            <h2>Weekly Reflection &amp; Statistics</h2>
+            <p className="muted">Radar chart, next.</p>
+          </section>
+        </div>
 
-      <ul style={{ marginTop: 16, lineHeight: 1.9, listStyle: "none", padding: 0 }}>
-        {anchors.map((a) => (
-          <li key={a.id}>
-            <span style={{ display: "inline-block", width: 90, textTransform: "capitalize" }}>
-              {a.anchorType}
-            </span>
-            <span style={{ opacity: 0.7 }}>
-              {a.status} (intensity {a.intensity})
-              {scores ? ` — wk ${scores[a.anchorType].toFixed(1)}` : ""}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </main>
+        {/* Right column: Today's Goals (full height, includes AI section) */}
+        <div className="col">
+          <section className="card stub goals-card">
+            <div className="goals-head">
+              <h2>Today&rsquo;s Goals</h2>
+              <span className="muted">0/6</span>
+            </div>
+            <p className="muted">
+              Goals (Primary / Secondary / Optional), Minimum Viable Day, and AI Replan, next.
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
   );
 }
 
