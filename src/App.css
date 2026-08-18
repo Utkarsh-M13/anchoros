@@ -52,7 +52,7 @@ body {
   display: grid;
   grid-template-columns: 1.05fr 0.85fr;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 .col {
   display: flex;
@@ -193,7 +193,7 @@ body {
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  min-height: 502px;
+  flex: 1;
 }
 .goals-head {
   display: flex;
@@ -277,23 +277,13 @@ body {
   margin: 2px 0;
 }
 
-/* Minimum Viable Day */
-.mvd {
-  font-size: 11px;
-  color: #ffffff;
-}
-.mvd-label {
-  font-weight: 600;
-}
-.mvd-value {
-  color: var(--muted);
-}
-
-/* AI Replan */
+/* AI Overview and Modifications: fills remaining space; overview centers in
+   the gap between the title and the input so a longer overview has room. */
 .replan {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  flex: 1;
 }
 .replan-label {
   margin: 0;
@@ -302,10 +292,19 @@ body {
   letter-spacing: -0.56px;
   color: #ffffff;
 }
+.replan-overview {
+  margin: 0;
+  padding: 12px 0;
+  font-size: 9px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: #8a8a8a;
+}
 .replan-input {
   box-sizing: border-box;
   width: 100%;
   min-height: 80px;
+  flex: 1;
   resize: vertical;
   background: #131313;
   border: 1px solid #a6a4a4;
@@ -317,4 +316,95 @@ body {
 }
 .replan-input::placeholder {
   color: #898989;
+}
+
+/* Weekly Reflection card, flat #141414 (no glaze), per Figma */
+.weekly-card {
+  background: #141414;
+  border-color: #434343;
+  padding: 12px;
+}
+.weekly-card::before {
+  display: none;
+}
+.weekly-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.48px;
+  color: #ffffff;
+}
+.weekly-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+.radar {
+  flex: 0 0 auto;
+}
+.radar-ring-inner {
+  fill: none;
+  stroke: #333333;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.radar-ring-outer {
+  fill: none;
+  stroke: #666666;
+  stroke-width: 1;
+}
+.radar-spoke {
+  stroke: #333333;
+  stroke-width: 1;
+}
+.radar-data {
+  fill: rgba(255, 255, 255, 0.16);
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.radar-dot {
+  fill: #ffffff;
+  stroke: #0d0d0d;
+  stroke-width: 0.5;
+}
+.radar-label {
+  fill: #8a8a8a;
+  font-size: 9px;
+}
+.weekly-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #434343;
+  margin: 8px 0;
+}
+.overview {
+  width: 120px;
+  flex: 0 0 auto;
+  padding: 8px 0;
+}
+.overview-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.48px;
+  color: #ffffff;
+}
+.overview-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.overview-stats p {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 300;
+}
+.ov-key {
+  color: #8a8a8a;
+}
+.ov-val {
+  color: #e7e7e7;
 }

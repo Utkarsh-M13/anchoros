@@ -3,10 +3,12 @@ import { migrate } from "./db/migrate";
 import { getOrCreateDay, updateAnchorStatus } from "./db/days";
 import { ensureDemoGoals } from "./db/goals";
 import { getAnchorMatrix, AnchorMatrix as MatrixData } from "./db/matrix";
+import { getWeeklyAnchorScores } from "./db/scoring";
 import { todayDate } from "./db/helpers";
 import { AnchorStatus, AnchorType, Day } from "./types";
 import { Header } from "./components/Header";
 import { AnchorMatrix } from "./components/AnchorMatrix";
+import { WeeklyRadar } from "./components/WeeklyRadar";
 import { TodaysGoals } from "./components/TodaysGoals";
 import { nextStatus } from "./ui";
 import "./App.css";
@@ -17,10 +19,12 @@ function App() {
   const today = todayDate();
   const [day, setDay] = useState<Day | null>(null);
   const [matrix, setMatrix] = useState<MatrixData | null>(null);
+  const [scores, setScores] = useState<Record<AnchorType, number> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setMatrix(await getAnchorMatrix(today, MATRIX_DAYS));
+    setScores(await getWeeklyAnchorScores(today));
   }, [today]);
 
   useEffect(() => {
@@ -64,16 +68,13 @@ function App() {
               <p className="muted">Loading anchors...</p>
             </section>
           )}
-          <section className="card stub">
-            <h2>Weekly Reflection &amp; Statistics</h2>
-            <p className="muted">Radar chart, next.</p>
-          </section>
+          <WeeklyRadar scores={scores} />
         </div>
 
         {/* Right column: Today's Goals (full height, includes AI Replan) */}
         <div className="col">
           {day ? (
-            <TodaysGoals dayId={day.id} minimumViableDay={day.minimumViableDay} />
+            <TodaysGoals dayId={day.id} />
           ) : (
             <section className="card">
               <p className="muted">Loading goals...</p>

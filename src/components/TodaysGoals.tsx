@@ -10,13 +10,7 @@ const SECTIONS: { key: GoalPriority; label: string }[] = [
   { key: "optional", label: "Optional" },
 ];
 
-export function TodaysGoals({
-  dayId,
-  minimumViableDay,
-}: {
-  dayId: string;
-  minimumViableDay: string | null;
-}) {
+export function TodaysGoals({ dayId }: { dayId: string }) {
   const [goals, setGoals] = useState<Goal[]>([]);
 
   const refresh = useCallback(async () => {
@@ -70,18 +64,12 @@ export function TodaysGoals({
 
       <div className="goals-divider" />
 
-      <div className="mvd">
-        <span className="mvd-label">Minimum viable day:</span>{" "}
-        <span className="mvd-value">{minimumViableDay || "not set yet"}</span>
-      </div>
-
       <div className="replan">
-        <p className="replan-label">AI Replan</p>
-        <textarea
-          className="replan-input"
-          placeholder="What changed today?"
-          disabled
-        />
+        <p className="replan-label">AI Overview and Modifications</p>
+        <p className="replan-overview">
+          Focus on your primary goals to keep today alive.
+        </p>
+        <textarea className="replan-input" placeholder="Modify Goals" disabled />
       </div>
     </section>
   );
