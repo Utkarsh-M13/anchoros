@@ -1,6 +1,14 @@
-import Databse from "better-sqlite"
-import path from "path";
+import Database from "@tauri-apps/plugin-sql";
 
-export const db = new Database(path.join(process.cwd(), "anchoros.db"));
+// tauri-plugin-sql owns the file (stored under the OS app-data dir).
+// One shared connection, loaded lazily on first use.
+const DB_URL = "sqlite:anchoros.db";
 
-db.pragma("foreign_keys = ON");
+let dbPromise: Promise<Database> | null = null;
+
+export function getDb(): Promise<Database> {
+  if (!dbPromise) {
+    dbPromise = Database.load(DB_URL);
+  }
+  return dbPromise;
+}

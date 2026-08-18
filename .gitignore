@@ -1,0 +1,30 @@
+# Dependencies / build output
+node_modules/
+dist/
+
+# Tauri (Rust build artifacts + generated schemas)
+/src-tauri/target/
+/src-tauri/gen/
+
+# SQLite databases (never commit real data)
+*.db
+*.db.bak-*
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
+*.sqlite3-journal
+*.db-wal
+*.sqlite-wal
+*.sqlite3-wal
+*.db-shm
+*.sqlite-shm
+*.sqlite3-shm
+
+# Local app data
+data/
+.local/
+.env
+.env.local
+
+.DS_Store
