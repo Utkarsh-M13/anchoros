@@ -70,3 +70,22 @@ export async function updateGoalStatus(
     [status, completedAt, ts, goalId],
   );
 }
+
+// Demo goals matching the Figma, seeded only when a day has none yet.
+// Temporary: once the AI Replan box is wired, goals come from there instead.
+const DEMO_GOALS: { title: string; priority: GoalPriority }[] = [
+  { title: "Go to the gym", priority: "primary" },
+  { title: "2 hours of Leetcode", priority: "primary" },
+  { title: "LSAT logical reasoning", priority: "secondary" },
+  { title: "Apply to internships", priority: "secondary" },
+  { title: "Hangout with friends", priority: "optional" },
+  { title: "Clean room", priority: "optional" },
+];
+
+export async function ensureDemoGoals(dayId: string): Promise<void> {
+  const existing = await getGoalsForDay(dayId);
+  if (existing.length > 0) return;
+  for (const g of DEMO_GOALS) {
+    await createGoal(dayId, g.title, null, g.priority);
+  }
+}

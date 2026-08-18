@@ -186,3 +186,135 @@ body {
   border-color: #ffffff;
   color: #0c0c0d;
 }
+
+/* Today's Goals card, spacing/sizes from the Figma spec */
+.goals-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  min-height: 502px;
+}
+.goals-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.goals-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.64px;
+  color: #ffffff;
+}
+.goals-count {
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: -0.56px;
+  color: #ffffff;
+}
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.goal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.goal-section-label {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: -0.56px;
+  color: #ffffff;
+}
+.goal-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.goal-check {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid #909090;
+  background: #383838;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0c0c0d;
+}
+.goal-check.set {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+.goal-title {
+  font-size: 12px;
+  color: #ffffff;
+  line-height: 24px;
+}
+.goal-title.done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.goals-divider {
+  height: 1px;
+  width: 180px;
+  align-self: center;
+  background: #3a3a3a;
+  margin: 2px 0;
+}
+
+/* Minimum Viable Day */
+.mvd {
+  font-size: 11px;
+  color: #ffffff;
+}
+.mvd-label {
+  font-weight: 600;
+}
+.mvd-value {
+  color: var(--muted);
+}
+
+/* AI Replan */
+.replan {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.replan-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.56px;
+  color: #ffffff;
+}
+.replan-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  background: #131313;
+  border: 1px solid #a6a4a4;
+  border-radius: 8px;
+  color: #ffffff;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 11px;
+}
+.replan-input::placeholder {
+  color: #898989;
+}

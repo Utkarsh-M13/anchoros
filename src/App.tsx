@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { migrate } from "./db/migrate";
 import { getOrCreateDay, updateAnchorStatus } from "./db/days";
+import { ensureDemoGoals } from "./db/goals";
 import { getAnchorMatrix, AnchorMatrix as MatrixData } from "./db/matrix";
 import { todayDate } from "./db/helpers";
-import { AnchorStatus, AnchorType } from "./types";
+import { AnchorStatus, AnchorType, Day } from "./types";
 import { Header } from "./components/Header";
 import { AnchorMatrix } from "./components/AnchorMatrix";
+import { TodaysGoals } from "./components/TodaysGoals";
 import { nextStatus } from "./ui";
 import "./App.css";
 
@@ -13,7 +15,7 @@ const MATRIX_DAYS = 3;
 
 function App() {
   const today = todayDate();
-  const [dayId, setDayId] = useState<string | null>(null);
+  const [day, setDay] = useState<Day | null>(null);
   const [matrix, setMatrix] = useState<MatrixData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,8 +27,9 @@ function App() {
     (async () => {
       try {
         await migrate();
-        const day = await getOrCreateDay(today);
-        setDayId(day.id);
+        const d = await getOrCreateDay(today);
+        await ensureDemoGoals(d.id);
+        setDay(d);
         await refresh();
       } catch (e) {
         setError(String(e));
@@ -35,8 +38,8 @@ function App() {
   }, [today, refresh]);
 
   const cycleToday = async (anchor: AnchorType, current: AnchorStatus) => {
-    if (!dayId) return;
-    await updateAnchorStatus(dayId, anchor, nextStatus(current));
+    if (!day) return;
+    await updateAnchorStatus(day.id, anchor, nextStatus(current));
     await refresh();
   };
 
@@ -67,17 +70,15 @@ function App() {
           </section>
         </div>
 
-        {/* Right column: Today's Goals (full height, includes AI section) */}
+        {/* Right column: Today's Goals (full height, includes AI Replan) */}
         <div className="col">
-          <section className="card stub goals-card">
-            <div className="goals-head">
-              <h2>Today&rsquo;s Goals</h2>
-              <span className="muted">0/6</span>
-            </div>
-            <p className="muted">
-              Goals (Primary / Secondary / Optional), Minimum Viable Day, and AI Replan, next.
-            </p>
-          </section>
+          {day ? (
+            <TodaysGoals dayId={day.id} minimumViableDay={day.minimumViableDay} />
+          ) : (
+            <section className="card">
+              <p className="muted">Loading goals...</p>
+            </section>
+          )}
         </div>
       </div>
     </div>
