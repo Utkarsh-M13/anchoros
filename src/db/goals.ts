@@ -71,6 +71,28 @@ export async function updateGoalStatus(
   );
 }
 
+export async function deleteGoal(goalId: string): Promise<void> {
+  const db = await getDb();
+  await db.execute("DELETE FROM goals WHERE id = $1", [goalId]);
+}
+
+// Update a goal's title and/or priority (used when the AI proposes a "modify").
+export async function updateGoal(
+  goalId: string,
+  fields: { title?: string; priority?: GoalPriority },
+): Promise<void> {
+  const db = await getDb();
+  const rows = await db.select<GoalRow[]>("SELECT * FROM goals WHERE id = $1", [goalId]);
+  if (rows.length === 0) return;
+  const cur = rows[0];
+  const title = fields.title ?? cur.title;
+  const priority = fields.priority ?? cur.priority;
+  await db.execute(
+    "UPDATE goals SET title = $1, priority = $2, updated_at = $3 WHERE id = $4",
+    [title, priority, nowIso(), goalId],
+  );
+}
+
 // Demo goals matching the Figma, seeded only when a day has none yet.
 // Temporary: once the AI Replan box is wired, goals come from there instead.
 const DEMO_GOALS: { title: string; priority: GoalPriority }[] = [
@@ -84,8 +106,9 @@ const DEMO_GOALS: { title: string; priority: GoalPriority }[] = [
 
 export async function ensureDemoGoals(dayId: string): Promise<void> {
   const existing = await getGoalsForDay(dayId);
-  if (existing.length > 0) return;
+  const titles = new Set(existing.map((g) => g.title));
   for (const g of DEMO_GOALS) {
+    if (titles.has(g.title)) continue; // idempotent: never duplicate a title
     await createGoal(dayId, g.title, null, g.priority);
   }
 }

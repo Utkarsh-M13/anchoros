@@ -9,14 +9,24 @@
 html,
 body {
   margin: 0;
-  background: var(--bg);
+  /* Transparent so the wallpaper shows through the window's rounded corners;
+     the .app panel provides the visible surface. */
+  background: transparent;
   color: var(--text);
 }
 
 .app {
-  min-height: 100vh;
-  padding: 26px 30px 40px;
+  height: 100vh;
+  overflow-y: auto; /* safety: never cut off, scroll if content exceeds window */
+  padding: 26px 30px 34px;
   box-sizing: border-box;
+  /* Floating widget panel */
+  background: rgba(12, 12, 14, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+}
+.header[data-tauri-drag-region] {
+  cursor: grab;
 }
 
 /* Header: inline badge + name + tagline */
@@ -318,6 +328,121 @@ body {
   color: #898989;
 }
 
+/* Revert (left) + Replan (right) row under the input */
+.replan-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-replan {
+  background: #ffffff;
+  color: #0c0c0d;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-revert {
+  background: transparent;
+  color: #8a8a8a;
+  border: 1px solid #333;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-replan:disabled,
+.btn-revert:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* AI proposal (overview + proposed changes + apply/ignore) */
+.replan-proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #131313;
+}
+.mvd-line {
+  margin: 0;
+  font-size: 11px;
+  color: #cfcfcf;
+}
+.mvd-label {
+  font-weight: 600;
+  color: #ffffff;
+}
+.changes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.change {
+  font-size: 11px;
+  color: #eaeaea;
+  line-height: 1.4;
+}
+.change-action {
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-right: 6px;
+  color: #0c0c0d;
+}
+.a-add {
+  background: #4ade80;
+}
+.a-modify {
+  background: #fbbf24;
+}
+.a-drop {
+  background: #f87171;
+}
+.change-reason {
+  display: block;
+  color: #8a8a8a;
+  margin-top: 2px;
+}
+.btn-apply,
+.btn-ignore {
+  border: none;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-apply {
+  background: #ffffff;
+  color: #0c0c0d;
+}
+.btn-ignore {
+  background: transparent;
+  color: #8a8a8a;
+  border: 1px solid #333;
+}
+.replan-error {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #f87171;
+}
+
 /* Weekly Reflection card, flat #141414 (no glaze), per Figma */
 .weekly-card {
   background: #141414;
@@ -407,4 +532,124 @@ body {
 }
 .ov-val {
   color: #e7e7e7;
+}
+
+/* Settings gear + panel */
+.pin-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.pin-btn:hover,
+.pin-btn.pinned {
+  color: #ffffff;
+}
+.settings-gear {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.settings-gear:hover {
+  color: #ffffff;
+}
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.settings-panel {
+  width: 320px;
+  max-width: 90%;
+  background: #161616;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.settings-head h2 {
+  margin: 0;
+  font-size: 15px;
+  color: #ffffff;
+}
+.settings-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.settings-label {
+  font-size: 12px;
+  color: #ffffff;
+}
+.key-set {
+  color: #4ade80;
+  font-size: 11px;
+  margin-left: 4px;
+}
+.settings-input {
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 7px;
+  color: #ffffff;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.settings-input::placeholder {
+  color: #666;
+}
+.settings-save {
+  align-self: flex-start;
+  background: #ffffff;
+  color: #0c0c0d;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.settings-save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.settings-note {
+  margin: 0;
+  font-size: 11px;
+  color: #4ade80;
+}
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #ffffff;
+  margin-top: 4px;
+}
+.settings-hint {
+  margin: 0;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
 }

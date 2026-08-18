@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { migrate } from "./db/migrate";
 import { getOrCreateDay, updateAnchorStatus } from "./db/days";
 import { ensureDemoGoals } from "./db/goals";
@@ -10,6 +10,9 @@ import { Header } from "./components/Header";
 import { AnchorMatrix } from "./components/AnchorMatrix";
 import { WeeklyRadar } from "./components/WeeklyRadar";
 import { TodaysGoals } from "./components/TodaysGoals";
+import { Settings } from "./components/Settings";
+import { getLock, setLock } from "./window";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { nextStatus } from "./ui";
 import "./App.css";
 
@@ -21,13 +24,49 @@ function App() {
   const [matrix, setMatrix] = useState<MatrixData | null>(null);
   const [scores, setScores] = useState<Record<AnchorType, number> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    getLock().then(setLocked).catch(() => {});
+  }, []);
+
+  // Drag the window from anywhere on the background, except actual controls
+  // (buttons, inputs) and the settings dialog.
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest("button, input, textarea, select, a, .settings-overlay")) {
+        return;
+      }
+      getCurrentWindow().startDragging().catch(() => {});
+    };
+    window.addEventListener("mousedown", onMouseDown);
+    return () => window.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  const toggleLock = async () => {
+    const next = !locked;
+    try {
+      await setLock(next);
+      setLocked(next);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const refresh = useCallback(async () => {
     setMatrix(await getAnchorMatrix(today, MATRIX_DAYS));
     setScores(await getWeeklyAnchorScores(today));
   }, [today]);
 
+  // Guard against StrictMode's double-invoke in dev (which double-seeded goals).
+  const didInit = useRef(false);
   useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
     (async () => {
       try {
         await migrate();
@@ -57,7 +96,12 @@ function App() {
 
   return (
     <div className="app">
-      <Header />
+      <Header
+        onSettings={() => setSettingsOpen(true)}
+        onToggleLock={toggleLock}
+        locked={locked}
+      />
+      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       <div className="grid">
         {/* Left column: anchor matrix, then weekly radar */}
         <div className="col">
