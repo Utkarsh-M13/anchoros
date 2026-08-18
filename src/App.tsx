@@ -80,9 +80,11 @@ function App() {
     })();
   }, [today, refresh]);
 
-  const cycleToday = async (anchor: AnchorType, current: AnchorStatus) => {
-    if (!day) return;
-    await updateAnchorStatus(day.id, anchor, nextStatus(current));
+  // Cycle any day's anchor (today or a backfilled past day). getOrCreateDay
+  // creates the day + its 8 anchors on demand if it didn't exist yet.
+  const cycle = async (anchor: AnchorType, date: string, current: AnchorStatus) => {
+    const d = await getOrCreateDay(date);
+    await updateAnchorStatus(d.id, anchor, nextStatus(current));
     await refresh();
   };
 
@@ -106,7 +108,7 @@ function App() {
         {/* Left column: anchor matrix, then weekly radar */}
         <div className="col">
           {matrix ? (
-            <AnchorMatrix data={matrix} today={today} onCycleToday={cycleToday} />
+            <AnchorMatrix data={matrix} today={today} onCycle={cycle} />
           ) : (
             <section className="card">
               <p className="muted">Loading anchors...</p>

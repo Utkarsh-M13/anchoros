@@ -6,13 +6,12 @@ import { StatusIcon } from "./StatusIcon";
 type Props = {
   data: MatrixData;
   today: string;
-  onCycleToday: (anchor: AnchorType, current: AnchorStatus) => void;
+  onCycle: (anchor: AnchorType, date: string, current: AnchorStatus) => void;
 };
 
-// 8 anchor rows x N day columns. Past days are read-only history; only today's
-// column is clickable. Empty cell = dark glossy box; a set status fills the box
-// white with a dark silhouette glyph inside.
-export function AnchorMatrix({ data, today, onCycleToday }: Props) {
+// 8 anchor rows x N day columns. Every column is editable (click to cycle), so
+// you can backfill the last couple of days as well as today.
+export function AnchorMatrix({ data, today, onCycle }: Props) {
   return (
     <section className="card matrix-card">
       <table className="matrix">
@@ -34,21 +33,14 @@ export function AnchorMatrix({ data, today, onCycleToday }: Props) {
                 const cell = data.cells[anchor][d];
                 const status: AnchorStatus = cell ? cell.status : "empty";
                 const isSet = status !== "empty";
-                const isToday = d === today;
                 return (
                   <td key={d}>
                     <button
-                      className={[
-                        "cell",
-                        STATUS_CLASS[status],
-                        isSet ? "set" : "",
-                        isToday ? "editable" : "readonly",
-                      ]
+                      className={["cell", STATUS_CLASS[status], isSet ? "set" : "", "editable"]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={isToday ? () => onCycleToday(anchor, status) : undefined}
-                      disabled={!isToday}
-                      title={`${ANCHOR_LABEL[anchor]}: ${status}`}
+                      onClick={() => onCycle(anchor, d, status)}
+                      title={`${ANCHOR_LABEL[anchor]} (${colLabel(d, today)}): ${status}`}
                     >
                       {isSet && <StatusIcon status={status} />}
                     </button>
