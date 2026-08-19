@@ -9,6 +9,7 @@ type GoalRow = {
   anchor_type: AnchorType | null;
   priority: GoalPriority;
   status: GoalStatus;
+  repeating: number;
   created_by: "user" | "ai";
   completed_at: string | null;
   created_at: string;
@@ -22,6 +23,7 @@ const mapGoal = (r: GoalRow): Goal => ({
   anchorType: r.anchor_type,
   priority: r.priority,
   status: r.status,
+  repeating: r.repeating === 1,
   createdBy: r.created_by,
   completedAt: r.completed_at,
   createdAt: r.created_at,
@@ -34,15 +36,16 @@ export async function createGoal(
   anchorType: AnchorType | null = null,
   priority: GoalPriority = "secondary",
   createdBy: "user" | "ai" = "user",
+  repeating: boolean = false,
 ): Promise<Goal> {
   const db = await getDb();
   const id = newId();
   const ts = nowIso();
   await db.execute(
     `INSERT INTO goals
-       (id, day_id, title, anchor_type, priority, status, created_by, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, 'not_started', $6, $7, $7)`,
-    [id, dayId, title, anchorType, priority, createdBy, ts],
+       (id, day_id, title, anchor_type, priority, status, repeating, created_by, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, 'not_started', $6, $7, $8, $8)`,
+    [id, dayId, title, anchorType, priority, repeating ? 1 : 0, createdBy, ts],
   );
   const rows = await db.select<GoalRow[]>("SELECT * FROM goals WHERE id = $1", [id]);
   return mapGoal(rows[0]);

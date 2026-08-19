@@ -9,6 +9,7 @@ import {
 } from "../db/goals";
 import { getAnchorLogsForDay } from "../db/days";
 import { getWeeklyAnchorScores } from "../db/scoring";
+import { scheduleFlush } from "../db/vaultSync";
 import { todayDate } from "../db/helpers";
 import { aiReplan, ReplanResult } from "../ai";
 import { StatusIcon } from "./StatusIcon";
@@ -52,6 +53,7 @@ export function TodaysGoals({ dayId }: { dayId: string }) {
   const toggle = async (g: Goal) => {
     await updateGoalStatus(g.id, g.status === "complete" ? "not_started" : "complete");
     await refresh();
+    scheduleFlush(dayId, todayDate());
   };
 
   const applyChanges = async (result: ReplanResult, current: Goal[]) => {
@@ -118,6 +120,41 @@ export function TodaysGoals({ dayId }: { dayId: string }) {
       setOverview(result.overview);
       setAiMsg("");
       await refresh();
+      scheduleFlush(dayId, date);
+    } catch (e) {
+      setAiError(String(e));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Read-only: ask the AI to assess the day and show its overview, without
+  // applying (or proposing) any changes. Message is optional here.
+  const summarize = async () => {
+    if (aiLoading) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const date = todayDate();
+      const anchors = await getAnchorLogsForDay(dayId);
+      const scores = await getWeeklyAnchorScores(date);
+      const result = await aiReplan({
+        date,
+        message: aiMsg.trim(),
+        summarizeOnly: true,
+        anchors: anchors.map((a) => ({
+          anchorType: a.anchorType,
+          status: a.status,
+          intensity: a.intensity,
+        })),
+        goals: active.map((g) => ({
+          title: g.title,
+          priority: g.priority,
+          status: g.status,
+        })),
+        weeklyScores: scores,
+      });
+      setOverview(result.overview);
     } catch (e) {
       setAiError(String(e));
     } finally {
@@ -142,6 +179,7 @@ export function TodaysGoals({ dayId }: { dayId: string }) {
     setSnapshot(null);
     setOverview(null);
     await refresh();
+    scheduleFlush(dayId, todayDate());
   };
 
   return (
@@ -162,7 +200,12 @@ export function TodaysGoals({ dayId }: { dayId: string }) {
               {items.map((g) => {
                 const complete = g.status === "complete";
                 return (
-                  <button key={g.id} className="goal-row" onClick={() => toggle(g)}>
+                  <button
+                    key={g.id}
+                    className="goal-row"
+                    onClick={() => toggle(g)}
+                    title={g.title}
+                  >
                     <span className={`goal-check ${complete ? "set" : ""}`}>
                       {complete && <StatusIcon status="complete" size={11} />}
                     </span>
@@ -202,6 +245,9 @@ export function TodaysGoals({ dayId }: { dayId: string }) {
         <div className="replan-actions">
           <button className="btn-revert" onClick={revert} disabled={!snapshot || aiLoading}>
             Revert
+          </button>
+          <button className="btn-summarize" onClick={summarize} disabled={aiLoading}>
+            Summarize
           </button>
           <button
             className="btn-replan"

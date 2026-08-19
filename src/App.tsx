@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { migrate } from "./db/migrate";
 import { getOrCreateDay, updateAnchorStatus } from "./db/days";
-import { ensureDemoGoals } from "./db/goals";
+import { loadVaultIntoDay } from "./db/vaultSync";
 import { getAnchorMatrix, AnchorMatrix as MatrixData } from "./db/matrix";
 import { getWeeklyAnchorScores } from "./db/scoring";
 import { todayDate } from "./db/helpers";
@@ -71,7 +71,8 @@ function App() {
       try {
         await migrate();
         const d = await getOrCreateDay(today);
-        await ensureDemoGoals(d.id);
+        // Pull today's goals from the BrainOS vault (the fenced TODAY block).
+        await loadVaultIntoDay(d.id, today);
         setDay(d);
         await refresh();
       } catch (e) {

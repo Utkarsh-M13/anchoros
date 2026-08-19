@@ -270,9 +270,14 @@ body {
   border-color: #ffffff;
 }
 .goal-title {
+  flex: 1 1 auto;
+  min-width: 0; /* allow the flex item to shrink below its content width */
   font-size: 12px;
   color: #ffffff;
   line-height: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* long goals truncate instead of growing the row */
 }
 .goal-title.done {
   color: var(--muted);
@@ -356,8 +361,19 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+.btn-summarize {
+  background: transparent;
+  color: #cfcfcf;
+  border: 1px solid #4a4a4a;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
 .btn-replan:disabled,
-.btn-revert:disabled {
+.btn-revert:disabled,
+.btn-summarize:disabled {
   opacity: 0.4;
   cursor: default;
 }

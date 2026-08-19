@@ -110,6 +110,26 @@ fn get_lock(app: tauri::AppHandle) -> bool {
     load_window_state(&app).map(|s| s.locked).unwrap_or(false)
 }
 
+// --- BrainOS vault bridge ---------------------------------------------------
+// The app reads/writes ONLY the fenced "TODAY (AnchorOS)" block in this file;
+// all parsing and splicing happens in TS. Path is overridable via
+// ANCHOROS_TRACKER so this isn't hard-pinned to one machine.
+const TRACKER_PATH: &str = "/Users/utkarsh_m/Documents/BrainOS/Tracker/master-tracker.md";
+
+fn tracker_path() -> String {
+    std::env::var("ANCHOROS_TRACKER").unwrap_or_else(|_| TRACKER_PATH.to_string())
+}
+
+#[tauri::command]
+fn read_tracker() -> Result<String, String> {
+    std::fs::read_to_string(tracker_path()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn write_tracker(content: String) -> Result<(), String> {
+    std::fs::write(tracker_path(), content).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -121,7 +141,9 @@ pub fn run() {
             ai::save_api_key,
             ai::has_api_key,
             set_lock,
-            get_lock
+            get_lock,
+            read_tracker,
+            write_tracker
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]

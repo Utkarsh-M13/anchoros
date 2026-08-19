@@ -72,6 +72,9 @@ pub struct ReplanContext {
     anchors: Vec<AnchorCtx>,
     goals: Vec<GoalCtx>,
     weekly_scores: HashMap<String, f64>,
+    // When true, the AI only assesses the day and proposes no changes.
+    #[serde(default)]
+    summarize_only: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -125,7 +128,11 @@ pub async fn ai_replan(context: ReplanContext) -> Result<ReplanResult, String> {
         context.date, context.message, anchors, goals, scores
     );
 
-    let system = "You are the planning layer of AnchorOS, a personal system built on 'drift, notice, return'. The goal is a realistic day that stays alive, not a perfect day. Make the SMALLEST set of changes that directly answers what the user said, and nothing more. If they ask to remove, drop, or cut a goal, use action 'drop' on exactly that goal (matched by its exact current title) and do not add or rearrange any other goals. Only use 'add' when the user's message clearly calls for a brand-new goal; never re-add or duplicate an existing one. Also return a one-line overview and a minimum viable day (the smallest set that keeps today alive). Reference existing goals by their exact current title in goalTitle. Plain, direct language, no em dashes.";
+    let system = if context.summarize_only {
+        "You are the reflection layer of AnchorOS, a personal system built on 'drift, notice, return'. The user wants an honest read of their day, NOT edits. You MUST NOT propose any changes: proposedChanges must be an empty array. In 'overview', give a clear, direct assessment of where today stands given the anchors, goals, and whatever the user said: what's on track, what's slipping, and what actually matters most right now. Keep it to a few sentences. Also give a minimum viable day (the smallest set that keeps today alive). Plain, direct language, no em dashes."
+    } else {
+        "You are the planning layer of AnchorOS, a personal system built on 'drift, notice, return'. The goal is a realistic day that stays alive, not a perfect day. Make the SMALLEST set of changes that directly answers what the user said, and nothing more. If they ask to remove, drop, or cut a goal, use action 'drop' on exactly that goal (matched by its exact current title) and do not add or rearrange any other goals. Only use 'add' when the user's message clearly calls for a brand-new goal; never re-add or duplicate an existing one. Also return a one-line overview and a minimum viable day (the smallest set that keeps today alive). Reference existing goals by their exact current title in goalTitle. Plain, direct language, no em dashes."
+    };
 
     let schema = json!({
         "type": "object",

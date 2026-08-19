@@ -21,6 +21,8 @@ export type ReplanContext = {
   anchors: { anchorType: AnchorType; status: string; intensity: number }[];
   goals: { title: string; priority: string; status: string }[];
   weeklyScores: Record<string, number>;
+  // When true, the AI only assesses the day and proposes no changes.
+  summarizeOnly?: boolean;
 };
 
 // Calls the Rust `ai_replan` command, which holds the API key and calls Claude.

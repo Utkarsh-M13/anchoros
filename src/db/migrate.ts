@@ -20,4 +20,16 @@ export async function migrate(): Promise<void> {
   for (const stmt of statements) {
     await db.execute(stmt);
   }
+
+  // schema.sql only creates tables IF NOT EXISTS, so columns added later need an
+  // explicit, idempotent backfill for DBs that already exist.
+  await ensureColumn("goals", "repeating", "INTEGER NOT NULL DEFAULT 0");
+}
+
+async function ensureColumn(table: string, column: string, decl: string): Promise<void> {
+  const db = await getDb();
+  const cols = await db.select<{ name: string }[]>(`PRAGMA table_info(${table})`);
+  if (!cols.some((c) => c.name === column)) {
+    await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
+  }
 }

@@ -54,6 +54,7 @@ export type Goal = {
   anchorType: AnchorType | null;
   priority: GoalPriority;
   status: GoalStatus;
+  repeating: boolean;
   createdBy: "user" | "ai";
   completedAt: string | null;
   createdAt: string;

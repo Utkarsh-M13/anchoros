@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS goals (
                  CHECK (priority IN ('primary','secondary','optional')),
   status       TEXT NOT NULL DEFAULT 'not_started'
                  CHECK (status IN ('not_started','complete','partial','dropped')),
+  repeating    INTEGER NOT NULL DEFAULT 0,             -- 1 = daily goal (@repeat in the vault)
   created_by   TEXT NOT NULL DEFAULT 'user'
                  CHECK (created_by IN ('user','ai')),
   completed_at TEXT,
