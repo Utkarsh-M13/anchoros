@@ -63,6 +63,30 @@ fn apply_window_level(window: &tauri::WebviewWindow, locked: bool) {
 #[cfg(not(target_os = "macos"))]
 fn apply_window_level(_window: &tauri::WebviewWindow, _locked: bool) {}
 
+// Set the Dock icon at runtime so the anchor shows in dev too (the bundled
+// .icns only applies to the built .app).
+#[cfg(target_os = "macos")]
+fn set_dock_icon() {
+    use cocoa::base::{id, nil};
+    use objc::{class, msg_send, sel, sel_impl};
+
+    const ICON: &[u8] = include_bytes!("../../src/assets/app-icon.png");
+    unsafe {
+        let data: id = msg_send![class!(NSData),
+            dataWithBytes: ICON.as_ptr() as *const std::ffi::c_void
+            length: ICON.len()];
+        let image: id = msg_send![class!(NSImage), alloc];
+        let image: id = msg_send![image, initWithData: data];
+        if image != nil {
+            let app: id = msg_send![class!(NSApplication), sharedApplication];
+            let _: () = msg_send![app, setApplicationIconImage: image];
+            eprintln!("[dock] icon set ({} bytes)", ICON.len());
+        } else {
+            eprintln!("[dock] NSImage init failed - icon NOT set");
+        }
+    }
+}
+
 #[tauri::command]
 fn set_lock(
     app: tauri::AppHandle,
@@ -100,6 +124,18 @@ pub fn run() {
             get_lock
         ])
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                set_dock_icon();
+                // The setup-time call can fire before the app finishes
+                // activating (macOS then ignores it), so re-apply shortly after
+                // launch on the main thread.
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(1200));
+                    let _ = handle.run_on_main_thread(set_dock_icon);
+                });
+            }
             if let Some(window) = app.get_webview_window("main") {
                 match load_window_state(app.handle()) {
                     Some(state) => {

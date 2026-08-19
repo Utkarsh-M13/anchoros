@@ -55,6 +55,7 @@ version = "0.0.1"
 dependencies = [
  "cocoa",
  "keyring",
+ "objc",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
