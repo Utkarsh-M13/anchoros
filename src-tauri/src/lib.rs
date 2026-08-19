@@ -3,8 +3,14 @@ mod ai;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::Manager;
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+use tauri::{Emitter, Manager};
 use tauri_plugin_autostart::MacosLauncher;
+
+// Timestamp of the app's own last write to the tracker. The file watcher uses
+// it to ignore the fs event our own flush produces (no write -> reload loop).
+struct SelfWriteTime(Arc<Mutex<Instant>>);
 
 #[derive(Serialize, Deserialize, Default)]
 struct WindowState {
@@ -126,13 +132,81 @@ fn read_tracker() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn write_tracker(content: String) -> Result<(), String> {
+fn write_tracker(content: String, state: tauri::State<SelfWriteTime>) -> Result<(), String> {
+    // Mark this as a self-write just before touching the file so the watcher
+    // can suppress the resulting event.
+    if let Ok(mut t) = state.0.lock() {
+        *t = Instant::now();
+    }
     std::fs::write(tracker_path(), content).map_err(|e| e.to_string())
+}
+
+// Watch the tracker file for EXTERNAL edits (hand edits, /done) and emit
+// "tracker-changed" so the app can reload. Self-writes are suppressed via the
+// SelfWriteTime state. Watches the parent dir (editors often rename-replace).
+fn start_tracker_watcher(app: tauri::AppHandle) {
+    use notify::{EventKind, RecursiveMode, Watcher};
+
+    let path = PathBuf::from(tracker_path());
+    let dir = match path.parent() {
+        Some(d) => d.to_path_buf(),
+        None => return,
+    };
+    let fname = match path.file_name() {
+        Some(f) => f.to_os_string(),
+        None => return,
+    };
+    let self_write = app.state::<SelfWriteTime>().0.clone();
+
+    std::thread::spawn(move || {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut watcher = match notify::recommended_watcher(move |res| {
+            let _ = tx.send(res);
+        }) {
+            Ok(w) => w,
+            Err(_) => return,
+        };
+        if let Err(e) = watcher.watch(&dir, RecursiveMode::NonRecursive) {
+            eprintln!("[watch] failed to watch {:?}: {}", dir, e);
+            return;
+        }
+        // Keep `watcher` owned here for the life of the thread, or it stops.
+        let mut last_emit = Instant::now() - std::time::Duration::from_secs(1);
+        for res in rx {
+            let event = match res {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+            if !matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_)) {
+                continue;
+            }
+            if !event
+                .paths
+                .iter()
+                .any(|p| p.file_name() == Some(fname.as_os_str()))
+            {
+                continue;
+            }
+            // Ignore the event our own flush just produced.
+            if let Ok(t) = self_write.lock() {
+                if t.elapsed() < std::time::Duration::from_millis(1500) {
+                    continue;
+                }
+            }
+            // Coalesce the burst of events a single save emits.
+            if last_emit.elapsed() < std::time::Duration::from_millis(250) {
+                continue;
+            }
+            last_emit = Instant::now();
+            let _ = app.emit("tracker-changed", ());
+        }
+    });
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(SelfWriteTime(Arc::new(Mutex::new(Instant::now()))))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
@@ -168,6 +242,8 @@ pub fn run() {
                     None => apply_window_level(&window, false),
                 }
             }
+            // Watch the BrainOS tracker for external edits (/done, hand edits).
+            start_tracker_watcher(app.handle().clone());
             Ok(())
         })
         .run(tauri::generate_context!())

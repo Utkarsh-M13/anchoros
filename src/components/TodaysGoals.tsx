@@ -9,10 +9,11 @@ import {
 } from "../db/goals";
 import { getAnchorLogsForDay } from "../db/days";
 import { getWeeklyAnchorScores } from "../db/scoring";
-import { scheduleFlush } from "../db/vaultSync";
+import { scheduleFlush, loadVaultIntoDay } from "../db/vaultSync";
 import { todayDate } from "../db/helpers";
 import { aiReplan, ReplanResult } from "../ai";
 import { StatusIcon } from "./StatusIcon";
+import { listen } from "@tauri-apps/api/event";
 
 const MAX_GOALS = 6;
 const PRIORITY_RANK: Record<GoalPriority, number> = {
@@ -44,6 +45,26 @@ export function TodaysGoals({ dayId }: { dayId: string }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Live sync: when the tracker changes on disk from OUTSIDE the app (hand
+  // edits, /done), reload today's goals from the vault. Self-writes are
+  // suppressed in Rust, so this only fires for external changes.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const unlisten = listen("tracker-changed", () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await loadVaultIntoDay(dayId, todayDate());
+        setSnapshot(null); // external edit invalidates the pre-replan baseline
+        setOverview(null);
+        await refresh();
+      }, 250);
+    });
+    return () => {
+      unlisten.then((f) => f());
+      if (timer) clearTimeout(timer);
+    };
+  }, [dayId, refresh]);
 
   // Dropped goals stay in the DB (so Revert can restore them) but are hidden.
   const active = goals.filter((g) => g.status !== "dropped");
