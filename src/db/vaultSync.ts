@@ -1,4 +1,6 @@
 import { Goal } from "../types";
+import { getDb } from "./index";
+import { todayDate } from "./helpers";
 import { getGoalsForDay, createGoal, deleteGoal, updateGoalStatus } from "./goals";
 import {
   readTracker,
@@ -68,6 +70,16 @@ function toVaultGoal(g: Goal, date: string): VaultGoal {
 // SQLite -> vault. Regenerates the fenced block from today's active goals and
 // splices it back in, leaving the rest of the tracker untouched.
 export async function flushDayToVault(dayId: string, date: string): Promise<void> {
+  // Guard against a stale app (left running on a past date) overwriting the
+  // block: only the current day may write. If this day isn't today, skip and
+  // let the rollover reload rebuild from the vault instead of clobbering it.
+  const db = await getDb();
+  const rows = await db.select<{ date: string }[]>(
+    "SELECT date FROM days WHERE id = $1",
+    [dayId],
+  );
+  if (rows[0]?.date !== todayDate()) return;
+
   const all = await getGoalsForDay(dayId);
   const active = all.filter((g) => g.status !== "dropped");
   const body = serializeBlock(active.map((g) => toVaultGoal(g, date)));

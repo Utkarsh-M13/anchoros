@@ -83,6 +83,26 @@ function App() {
     })();
   }, [today, refresh]);
 
+  // A long-running widget can sit through midnight. Poll for the date rolling
+  // over and, when it does, reload the current day + its goals from the vault
+  // (and re-center the matrix) so the todos never go stale on yesterday.
+  useEffect(() => {
+    const id = setInterval(async () => {
+      const now = todayDate();
+      if (!day || now === day.date) return;
+      try {
+        const d = await getOrCreateDay(now);
+        await loadVaultIntoDay(d.id, now);
+        setDay(d);
+        setMatrix(await getAnchorMatrix(now, MATRIX_DAYS));
+        setScores(await getWeeklyAnchorScores(now));
+      } catch (e) {
+        setError(String(e));
+      }
+    }, 60000);
+    return () => clearInterval(id);
+  }, [day]);
+
   // Cycle any day's anchor (today or a backfilled past day). getOrCreateDay
   // creates the day + its 8 anchors on demand if it didn't exist yet.
   const cycle = async (anchor: AnchorType, date: string, current: AnchorStatus) => {
