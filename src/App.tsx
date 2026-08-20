@@ -32,8 +32,10 @@ function App() {
   }, []);
 
   // Drag the window from anywhere on the background, except actual controls
-  // (buttons, inputs) and the settings dialog.
+  // (buttons, inputs) and the settings dialog. When pinned, the window is
+  // fixed in place, so dragging is disabled.
   useEffect(() => {
+    if (locked) return; // pinned = locked in place, no dragging
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
       const target = e.target as HTMLElement | null;
@@ -45,7 +47,7 @@ function App() {
     };
     window.addEventListener("mousedown", onMouseDown);
     return () => window.removeEventListener("mousedown", onMouseDown);
-  }, []);
+  }, [locked]);
 
   const toggleLock = async () => {
     const next = !locked;
